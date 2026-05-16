@@ -1,0 +1,18 @@
+# Requirements for reproducing the inference system with needed dependencies and version
+
+# Will continue to add and provide the versions after project completion
+
+# API Development
+rq==
+fastapi==
+pydantic==
+redis==
+uuid==
+uvicorn==
+
+# LLM
+openai==
+
+
+# Environment Variable Handling
+os==
