@@ -1,5 +1,8 @@
 from redis import Redis
-from rq import Worker, Queue
+from rq import Worker, Queue, connections
+
+listen = ["chat_jobs"]
+
 # RQ needs a worker process running separately.
 # overall procedure needed: make requests async using a queue
 redis_conn = Redis(
@@ -8,6 +11,7 @@ redis_conn = Redis(
     decode_responses=True
 )
 
-queue = Queue("chat_jobs", connection=redis_conn)
-worker = Worker([queue], connection=redis_conn)
-worker.work()
+if __name__ == "__main__":
+    with connections(redis_conn):
+        worker = Worker([Queue(name) for name in listen])
+        worker.work()
