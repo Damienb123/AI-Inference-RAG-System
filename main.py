@@ -3,8 +3,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from rq import Queue
 from redis import Redis
-
-
+from uuid import uuid4
 
 # create the core application instance
 app = FastAPI()
@@ -17,8 +16,6 @@ queue = Queue("chat_jobs", connection=redis_conn)
 class ChatRequest(BaseModel):
     message: str
 
-def chat_message(message: str):
-    return {"message": f"processed {message}"}
 
 # returns health check response to ensure the server is correctly running
 @app.get("/")
@@ -26,10 +23,15 @@ def status():
     return {
         "success": True,
         "message": "OK"
+
     }
 
 # POST /chat accepts JSON as {"message": "hello"} returns {"message": "processed hello"}
 @app.post("/chat")
-async def create_message(data: ChatRequest):
-    job = queue.enqueue(chat_message, data.message)
-    return {"job_id": job.id, "status": "queued"}
+async def create_job(data: ChatRequest):
+    job_id = str(uuid4())
+    queue.enqueue("services.jobs.process_chat_job", payload)
+    payload = {
+        "job_id": job_id,
+        "message": data.message
+    }
