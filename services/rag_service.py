@@ -1,7 +1,10 @@
 # RAG imports
 import os
 from openai import OpenAI
-from pinecone.grpc import PinconeGRPC as Pinecone
+from pinecone.grpc import PineconeGRPC as Pinecone
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # Environment variable handling
@@ -21,3 +24,48 @@ def get_embedding(text:str) -> list[float]:
         encoding_format="float",
     )
     return response.data[0].embedding
+
+# Following Pinecones semantic search docs next steps are to query with the vector and top_k
+# therefore, set include_metadata=True to get the stored chunk text back
+# include_values=False is a better integration for performance when not needing raw vector values
+def retrieve_top_k(query: str, top_k: int = 5, namespace: str = "__default__"):
+    query_vec = get_embedding(query)
+
+    results = index.query(
+        namespace=namespace,
+        vector=query_vec,
+        top_k=top_k,
+        include_metadata=True,
+        include_values=False,
+    )
+    return results.matches
+
+# Inject retrieved text into the system, take the top matches, pull chunk_text from metadata, and build a context block.
+# This particular part is what is passed to the LLM
+def build_context(matches) -> str:
+    chunks = []
+    for i in matches:
+        meta = i.metadata or {}
+        text = meta.get("chunk_text", "")
+        if text:
+            chunks.append(text)
+    return "\n\n---\n\n".join(chunks)
+
+# Per OpenAIs embeddings docs, we are now splitting the corpus into chunks smaller than the model token limit
+# embed each chunk, and store those embeddings in a vector database
+# The embeddings create the endpoint and to allow the input to stay within the models token limit
+def upsert_chunks(chunks: list[dict], namespace: str = "__default__"):
+    vectors = []
+    for chunk in chunks:
+        emb = get_embedding(chunk["text"])
+        vectors.append({
+            "id": chunk["id"],
+            "values": emb,
+            "metadata":{
+                "doc_id": chunk["doc_id"],
+                "chunk_index": chunk["chunk_index"],
+                "source": chunk["source"],
+                "chunk_text": chunk["text"],
+            }
+        })
+    index.upsert(vectors=vectors, namespace=namespace)
