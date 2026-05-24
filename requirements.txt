@@ -3,16 +3,22 @@
 # Will continue to add and provide the versions after project completion
 
 # API Development
-rq==
-fastapi==
-pydantic==
-redis==
-uuid==
-uvicorn==
+fastapi==0.115.0
+univcorn==0.30.6 
+pydantic==2.9.2
 
-# LLM
-openai==
+# Queu + Distributed Worker System
+redis==5.0.8
+rq==1.16.2
 
+# LLM Generation
+openai==1.47.0
 
 # Environment Variable Handling
-os==
+python-dotenv==1.0.1
+
+# Vector Database / RAG
+
+# Optional Utilities
+requests==2.23.3
+
