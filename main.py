@@ -5,6 +5,7 @@ from rq import Queue
 from redis import Redis
 from uuid import uuid4
 
+
 # create the core application instance
 app = FastAPI()
 
@@ -26,6 +27,40 @@ def status():
 
     }
 
+# Job status updates and result retrieval 
+# Track async jobs
+# Example endpoints: GET /status/{job_id} | GET /result/{job_id}
+@app.get("/status/{job_id}")
+async def get_status(job_id: str):
+    result = redis_conn.get(f"result: {job_id}")
+    queue.enqueue()
+
+    if result: 
+        return {
+            "job_id": True,
+            "status": "Completed"
+        }
+    return {
+                "job_id": False,
+                "status": "Processing"
+            }
+
+@app.get("/result/{job_id}")
+async def get_result(job_id: str):
+    result = redis_conn.get(f"result: {job_id}")
+    
+    if not result:
+        return {
+            "job_id": job_id,
+            "status": "Processing"
+        }
+    return {
+          "job_id": job_id,
+          "status": "Completed",
+          "response": result
+
+    }
+    
 # POST /chat accepts JSON as {"message": "hello"} returns {"message": "processed hello"}
 @app.post("/chat")
 async def create_job(data: ChatRequest):
