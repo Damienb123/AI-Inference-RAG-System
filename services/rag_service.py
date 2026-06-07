@@ -2,6 +2,7 @@
 import os
 from openai import OpenAI
 from pinecone.grpc import PineconeGRPC as Pinecone
+from tenacity import retry, wait_exponential, stop_after_attempt
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -29,6 +30,31 @@ def get_embedding(text:str) -> list[float]:
 # therefore, set include_metadata=True to get the stored chunk text back
 # include_values=False is a better integration for performance when not needing raw vector values
 def retrieve_top_k(query: str, top_k: int = 5, namespace: str = "__default__"):
+    query_vec = get_embedding(query)
+
+    results = index.query(
+        namespace=namespace,
+        vector=query_vec,
+        top_k=top_k,
+        include_metadata=True,
+        include_values=False,
+    )
+    return results.matches
+
+# The same exponential back off strategy for llm call is used for retrieving 
+# top k to query all expected results into a vector query if all results are true 
+# it'll return all matches
+@retry(
+        wait=wait_exponential(multiplier=1, min=2, max=60),
+        stop=stop_after_attempt(5)
+)
+
+def retrieve_top_k_retries(
+    query: str,
+    top_k: int = 5,
+    namespace: str = "__default__"
+):
+    
     query_vec = get_embedding(query)
 
     results = index.query(

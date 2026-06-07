@@ -4,7 +4,7 @@
 
 # API Development
 fastapi==0.115.0
-univcorn==0.30.6 
+uvicorn==0.30.6
 pydantic==2.9.2
 
 # Queu + Distributed Worker System
@@ -18,7 +18,9 @@ openai==1.47.0
 python-dotenv==1.0.1
 
 # Vector Database / RAG
+pinecone[grpc]==5.3.1
 
 # Optional Utilities
-requests==2.23.3
+requests==2.32.3
+tenacity==9.0.0
 
